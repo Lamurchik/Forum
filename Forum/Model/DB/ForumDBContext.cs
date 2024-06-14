@@ -10,7 +10,7 @@ namespace Forum.Model.DB
         public DbSet<Admin> Admins { get; set; }
 
         public ForumDBContext(DbContextOptions<ForumDBContext> options) : base(options) { }
-
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Здесь можно добавить дополнительные настройки, если необходимо
