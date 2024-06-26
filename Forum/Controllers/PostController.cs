@@ -1,4 +1,5 @@
 ﻿using Forum.Model.DB;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,8 @@ namespace Forum.Controllers
             return NotFound();
         }
 
-        [HttpPost]
+        [Authorize("User")]
+        [HttpPost("CreatePost")]
         public async Task<IActionResult> CreatePost(Post post)//без картинки 
         {
             await _context.Posts.AddAsync(post);
@@ -50,7 +52,7 @@ namespace Forum.Controllers
             return NotFound();
         }
 
-        [HttpPut]
+        [HttpPut("UpdatePost")]
         public async Task<IActionResult> UpdatePost(Post newPost)
         {
             var post = _context.Posts.FirstOrDefault(i => i.PostId == newPost.PostId);
@@ -64,7 +66,7 @@ namespace Forum.Controllers
             }
             return NotFound();          
         }
-        [HttpDelete]
+        [HttpDelete("DelatePost")]
         public async Task<IActionResult> DelatePost(int postId)
         {
              var post = await _context.Posts.FindAsync(postId);
