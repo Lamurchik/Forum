@@ -6,6 +6,13 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+var key = builder.Configuration["Jwt:Key"];
+var issuer = builder.Configuration["Jwt:Issuer"];
+
+Console.WriteLine($"Key: {key}");
+Console.WriteLine($"Issuer: {issuer}");
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -14,7 +21,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ForumDBContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 builder.Services.AddAuthentication(options =>
 {
@@ -40,7 +46,6 @@ builder.Services.AddAuthorization();
 
 
 var app = builder.Build();
-
 
 using (var scope = app.Services.CreateScope())
 {

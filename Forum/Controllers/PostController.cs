@@ -7,8 +7,9 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace Forum.Controllers
 {
-    [Route("api/[controller]")]
+    
     [ApiController]
+    [Route("api/[controller]")]
     public class PostController : ControllerBase
     {
         private readonly ForumDBContext _context;
@@ -16,7 +17,7 @@ namespace Forum.Controllers
         {
             _context = context;
         }
-        [HttpGet]
+        [HttpGet("GetPost")]
         public async Task<IActionResult> GetPost(int id)
         {
             Post? post=null;
@@ -32,7 +33,7 @@ namespace Forum.Controllers
             _context.SaveChanges();
             return NoContent();
         }
-        [HttpGet]
+        [HttpGet("GetUserPosts")]
         public async Task<IActionResult> GetUserPosts(int userID)
         {
             List<Post>? res = null;
@@ -40,7 +41,7 @@ namespace Forum.Controllers
             if (res != null) return Ok(res);
             return NotFound();
         }
-        [HttpGet]
+        [HttpGet("GetPostComents")]
         public async Task<IActionResult> GetPostComents(int postId)
         {
             List<Comment>? comments=null;
