@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting.Internal;
 using System.Reflection.Metadata.Ecma335;
 
 namespace Forum.Controllers
@@ -14,9 +15,11 @@ namespace Forum.Controllers
     public class PostController : ControllerBase
     {
         private readonly ForumDBContext _context;
-        public PostController(ForumDBContext context)   
+        private readonly IWebHostEnvironment _hostingEnvironment;
+        public PostController(ForumDBContext context, IWebHostEnvironment hostingEnvironment)   
         {
             _context = context;
+            _hostingEnvironment = hostingEnvironment;
         }
         [HttpGet("GetPost")]
         public async Task<IActionResult> GetPost(int id)
@@ -27,14 +30,44 @@ namespace Forum.Controllers
             return NotFound();
         }
 
-        [Authorize("User")]
+        [Authorize(Roles = "User")]
         [HttpPost("CreatePost")]
-        public async Task<IActionResult> CreatePost(Post post)//без картинки 
+        public async Task<IActionResult> CreatePost(Post post)//, IFormFile? titleImageFile
         {
+            /*
+            if (titleImageFile != null)
+            {
+                var webRootPath = _hostingEnvironment.WebRootPath;
+                var imagesPath = Path.Combine(webRootPath, "images");
+
+                // Убедитесь, что папка существует
+                if (!Directory.Exists(imagesPath))
+                {
+                    Directory.CreateDirectory(imagesPath);
+                }
+
+                // Формируем полный путь к файлу
+                var filePath = Path.Combine(imagesPath, titleImageFile.FileName);
+
+                // Сохраняем имя файла в свойство post
+                post.PostFilePatch = titleImageFile.FileName;
+
+                // Сохраняем файл на диск
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await titleImageFile.CopyToAsync(stream);
+                }
+            }
+            */
+            post.PostFilePatch = "";
+            post.PostDate = DateTime.Now.ToUniversalTime();
+            
             await _context.Posts.AddAsync(post);
             _context.SaveChanges();
-            return NoContent();
+            return Ok();
         }
+
+
         [HttpGet("GetUserPosts")]
         public async Task<IActionResult> GetUserPosts(int userID)
         {

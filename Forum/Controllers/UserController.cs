@@ -48,7 +48,7 @@ namespace Forum.Controllers
 
             if (user == null) { return Unauthorized("Invalid username or password."); }
 
-            var token = GenerateJwtToken(user, "user");
+            var token = GenerateJwtToken(user, "User");
             return Ok(new { token });
         }
        

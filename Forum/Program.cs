@@ -68,7 +68,11 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));///сделать перечисления 
+    options.AddPolicy("RequireUserRole", policy => policy.RequireRole("User"));
+});
 
 
 
