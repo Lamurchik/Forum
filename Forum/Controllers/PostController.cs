@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting.Internal;
 using System.Reflection.Metadata.Ecma335;
+using StackExchange.Redis;
 
 namespace Forum.Controllers
 {
@@ -71,6 +72,13 @@ namespace Forum.Controllers
         [HttpGet("GetUserPosts")]
         public async Task<IActionResult> GetUserPosts(int userID)
         {
+            //редис 
+            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
+            IDatabase db = redis.GetDatabase();
+
+
+
+            //бд
             List<Post>? res = null;
             await Task.Run(() => { res = _context.Users.FirstOrDefault(i => i.UserId == userID)?.Posts.ToList(); });
             if (res != null) return Ok(res);
