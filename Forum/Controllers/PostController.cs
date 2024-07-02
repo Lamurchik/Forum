@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting.Internal;
 using System.Reflection.Metadata.Ecma335;
 using StackExchange.Redis;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace Forum.Controllers
 {
@@ -17,18 +19,43 @@ namespace Forum.Controllers
     {
         private readonly ForumDBContext _context;
         private readonly IWebHostEnvironment _hostingEnvironment;
-        public PostController(ForumDBContext context, IWebHostEnvironment hostingEnvironment)   
+        private readonly IDistributedCache _cache;
+        private readonly string _redisKeyPost = "Post:";
+        public PostController(ForumDBContext context, IWebHostEnvironment hostingEnvironment, IDistributedCache cache)   
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
+            _cache = cache;
         }
         [HttpGet("GetPost")]
         public async Task<IActionResult> GetPost(int id)
         {
+            var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}{id}");
+
+            if (cachedPost != null)
+            {
+                var resRedis = JsonSerializer.Deserialize<Post>(cachedPost);
+                Console.WriteLine("redis get post");
+                return Ok(resRedis);
+
+            }
+
+
+
             Post? post=null;
             await Task.Run(() => { post = _context.Posts.FirstOrDefault(i => i.PostId == id); });
-            if (post != null ) return Ok(post);
-            return NotFound();
+            if (post != null)
+            {
+                var serializedPosts = JsonSerializer.Serialize(post);
+                await _cache.SetStringAsync($"{_redisKeyPost}{id}", serializedPosts, new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) // Настройте время хранения в кэше
+                });
+
+
+                return Ok(post);
+            }
+                return NotFound();
         }
 
         [Authorize(Roles = "User")]
@@ -61,28 +88,44 @@ namespace Forum.Controllers
             }
             */
             post.PostFilePatch = "";
-            post.PostDate = DateTime.Now.ToUniversalTime();
-            
+            post.PostDate = DateTime.Now.ToUniversalTime();            
             await _context.Posts.AddAsync(post);
             _context.SaveChanges();
+
+
+
             return Ok();
         }
 
 
         [HttpGet("GetUserPosts")]
-        public async Task<IActionResult> GetUserPosts(int userID)
+        public async Task<IActionResult> GetUserPosts(int userID) ///тут ошибка исправить
         {
             //редис 
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
-            IDatabase db = redis.GetDatabase();
+            var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}{userID}");
 
+            if ( cachedPost != null ) 
+            {
+                var resRedis = JsonSerializer.Deserialize<List<Post>>(cachedPost);//list
+                Console.WriteLine("redis get post");
+                return Ok(resRedis);
 
+            }
 
             //бд
             List<Post>? res = null;
             await Task.Run(() => { res = _context.Users.FirstOrDefault(i => i.UserId == userID)?.Posts.ToList(); });
-            if (res != null) return Ok(res);
-            return NotFound();
+            if (res != null)
+            {
+                var serializedPosts = JsonSerializer.Serialize(res);
+                await _cache.SetStringAsync($"{_redisKeyPost}{userID}", serializedPosts, new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) // Настройте время хранения в кэше
+                });
+                return Ok(res);
+
+            }
+                return NotFound();
         }
         [HttpGet("GetPostComents")]
         public async Task<IActionResult> GetPostComents(int postId)
@@ -103,6 +146,9 @@ namespace Forum.Controllers
                 post.PostTitle = newPost.PostTitle;
                 post.PostBody = newPost.PostBody;
                 await _context.SaveChangesAsync();
+
+                await _cache.SetStringAsync($"{_redisKeyPost}{newPost.PostId}", JsonSerializer.Serialize(post));
+                
                 return NoContent();
             }
             return NotFound();          
@@ -115,6 +161,7 @@ namespace Forum.Controllers
             {
                 _context.Remove(post);
                 await _context.SaveChangesAsync();
+                await _cache.RemoveAsync($"{_redisKeyPost}{postId}");
                 return NoContent();
             }
             return NotFound();

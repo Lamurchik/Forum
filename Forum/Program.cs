@@ -5,6 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,6 +78,14 @@ builder.Services.AddAuthorization(options =>
 });
 
 //builder.Services.AddStackExchangeRedisCache();
+
+
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost"; // Ваш адрес Redis-сервера
+    options.InstanceName = "local"; // Префикс для ключей Redis
+});
 
 
 
