@@ -48,6 +48,7 @@ builder.Services.AddSwaggerGen(options =>
 
         }
     });
+    options.OperationFilter<FileUploadOperationFilter>();
 });
 builder.Services.AddDbContext<ForumDBContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

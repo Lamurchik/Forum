@@ -60,13 +60,14 @@ namespace Forum.Controllers
 
         [Authorize(Roles = "User")]
         [HttpPost("CreatePost")]
-        public async Task<IActionResult> CreatePost(Post post)//, IFormFile? titleImageFile
+        public async Task<IActionResult> CreatePost(Post post, IFormFile? titleImageFile)//
         {
-            /*
+            
             if (titleImageFile != null)
             {
+                
                 var webRootPath = _hostingEnvironment.WebRootPath;
-                var imagesPath = Path.Combine(webRootPath, "images");
+                var imagesPath = System.IO.Path.Combine(webRootPath, "images");
 
                 // Убедитесь, что папка существует
                 if (!Directory.Exists(imagesPath))
@@ -75,7 +76,7 @@ namespace Forum.Controllers
                 }
 
                 // Формируем полный путь к файлу
-                var filePath = Path.Combine(imagesPath, titleImageFile.FileName);
+                var filePath = System.IO.Path.Combine(imagesPath, titleImageFile.FileName);
 
                 // Сохраняем имя файла в свойство post
                 post.PostFilePatch = titleImageFile.FileName;
@@ -86,8 +87,8 @@ namespace Forum.Controllers
                     await titleImageFile.CopyToAsync(stream);
                 }
             }
-            */
-            post.PostFilePatch = "";
+            else
+             post.PostFilePatch = "";
             post.PostDate = DateTime.Now.ToUniversalTime();            
             await _context.Posts.AddAsync(post);
             _context.SaveChanges();
@@ -102,7 +103,7 @@ namespace Forum.Controllers
         public async Task<IActionResult> GetUserPosts(int userID) ///тут ошибка исправить
         {
             //редис 
-            var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}{userID}");
+            var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}All{userID}");
 
             if ( cachedPost != null ) 
             {
@@ -114,11 +115,11 @@ namespace Forum.Controllers
 
             //бд
             List<Post>? res = null;
-            await Task.Run(() => { res = _context.Users.FirstOrDefault(i => i.UserId == userID)?.Posts.ToList(); });
+            await Task.Run(() => { res = _context.Posts.Where(i => i.UserAuthorId == userID)?.ToList(); });
             if (res != null)
             {
                 var serializedPosts = JsonSerializer.Serialize(res);
-                await _cache.SetStringAsync($"{_redisKeyPost}{userID}", serializedPosts, new DistributedCacheEntryOptions
+                await _cache.SetStringAsync($"{_redisKeyPost}All{userID}", serializedPosts, new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) // Настройте время хранения в кэше
                 });
