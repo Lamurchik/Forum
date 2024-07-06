@@ -39,9 +39,6 @@ namespace Forum.Controllers
                 return Ok(resRedis);
 
             }
-
-
-
             Post? post=null;
             await Task.Run(() => { post = _context.Posts.FirstOrDefault(i => i.PostId == id); });
             if (post != null)
@@ -100,7 +97,7 @@ namespace Forum.Controllers
 
 
         [HttpGet("GetUserPosts")]
-        public async Task<IActionResult> GetUserPosts(int userID) ///тут ошибка исправить
+        public async Task<IActionResult> GetUserPosts(int userID) //нужен ли тут редис?
         {
             //редис 
             var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}All{userID}");
@@ -128,14 +125,7 @@ namespace Forum.Controllers
             }
                 return NotFound();
         }
-        [HttpGet("GetPostComents")]
-        public async Task<IActionResult> GetPostComents(int postId)
-        {
-            List<Comment>? comments=null;
-            await Task.Run(() => { comments = _context.Posts.FirstOrDefault(i => i.PostId == postId)?.Comments.ToList(); });
-            if(comments != null) return Ok(comments);
-            return NotFound();
-        }
+       
 
         [HttpPut("UpdatePost")]
         public async Task<IActionResult> UpdatePost(Post newPost)
