@@ -7,15 +7,26 @@ using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
+using NLog;
+using NLog.Web;
+using NLog.Extensions.Logging;
+
+
+var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
+
+
+logger.Debug("init main");
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-var key = builder.Configuration["Jwt:Key"];
-var issuer = builder.Configuration["Jwt:Issuer"];
+/*
+builder.Logging.ClearProviders();
+builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+*/
+//builder.Host.UseNLog();
 
-Console.WriteLine($"Key: {key}");
-Console.WriteLine($"Issuer: {issuer}");
+
 
 // Add services to the container.
 
@@ -49,6 +60,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
     options.OperationFilter<FileUploadOperationFilter>();
+    options.MapType<IFormFile>(() => new OpenApiSchema { Type = "string", Format = "binary" });
 });
 builder.Services.AddDbContext<ForumDBContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -91,6 +103,11 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 
 var app = builder.Build();
+
+
+var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+loggerFactory.AddNLog();
+
 
 using (var scope = app.Services.CreateScope())
 {

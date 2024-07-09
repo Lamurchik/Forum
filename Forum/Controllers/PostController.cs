@@ -55,15 +55,15 @@ namespace Forum.Controllers
                 return NotFound();
         }
 
-        [Authorize(Roles = "User")]
+       // [Authorize(Roles = "User")]
         [HttpPost("CreatePost")]
-        public async Task<IActionResult> CreatePost(Post post, IFormFile? titleImageFile)//
+        public async Task<IActionResult> CreatePost([FromForm] Post post,  IFormFile? titleImageFile)//свагер работает не коректно 
         {
             
             if (titleImageFile != null)
             {
                 
-                var webRootPath = _hostingEnvironment.WebRootPath;
+                var webRootPath = _hostingEnvironment.WebRootPath;//говно 
                 var imagesPath = System.IO.Path.Combine(webRootPath, "images");
 
                 // Убедитесь, что папка существует
@@ -89,10 +89,36 @@ namespace Forum.Controllers
             post.PostDate = DateTime.Now.ToUniversalTime();            
             await _context.Posts.AddAsync(post);
             _context.SaveChanges();
-
-
-
             return Ok();
+        }
+
+
+        [HttpGet("GetPostImage")]
+        public async Task<IActionResult> GetPostImage(int postId) //поменять на id
+        {
+            var fileName = (await _context.Posts.FirstOrDefaultAsync(Result => Result.PostId == postId))?.PostFilePatch;
+            if(fileName == null)
+                return NotFound();
+            var filePath = System.IO.Path.Combine(System.IO.Path.Combine(Directory.GetCurrentDirectory(),"wwwroot", "images"), fileName);
+
+            if (!System.IO.File.Exists(filePath))
+                return NotFound();
+
+            var mimeType = GetMimeType(filePath);
+            return PhysicalFile(filePath, mimeType, System.IO.Path.GetFileName(filePath));
+        }
+
+        private string GetMimeType(string filePath)
+        {
+            var extension = System.IO.Path.GetExtension(filePath).ToLowerInvariant();
+            return extension switch
+            {
+                ".jpg" => "image/jpeg",
+                ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                _ => "application/octet-stream",
+            };
         }
 
 
@@ -128,7 +154,7 @@ namespace Forum.Controllers
        
 
         [HttpPut("UpdatePost")]
-        public async Task<IActionResult> UpdatePost(Post newPost)
+        public async Task<IActionResult> UpdatePost(Post newPost)//доделать redis
         {
             var post = _context.Posts.FirstOrDefault(i => i.PostId == newPost.PostId);
             if(post != null) 

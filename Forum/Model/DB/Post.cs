@@ -13,7 +13,7 @@ namespace Forum.Model.DB
         public int UserAuthorId { get; set; } // Идентификатор автора поста (ссылается на пользователя)
 
         //[Required]
-        [MaxLength(200)]
+        //[MaxLength(200)]
         public string PostTitle { get; set; } // Заголовок поста
 
         public string PostBody { get; set; } // Основное содержание поста

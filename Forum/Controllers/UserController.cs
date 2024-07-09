@@ -17,10 +17,12 @@ namespace Forum.Controllers
     {
         private readonly ForumDBContext _context;
         private readonly IConfiguration _configuration;
-        public UserController(ForumDBContext context, IConfiguration configuration)
+        private readonly ILogger<UserController> _logger;
+        public UserController(ForumDBContext context, IConfiguration configuration, ILogger<UserController> logger)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
         [HttpPost("Register")]
         public async Task<IActionResult> Register(string loginName, string password)
@@ -49,6 +51,7 @@ namespace Forum.Controllers
             if (user == null) { return Unauthorized("Invalid username or password."); }
 
             var token = GenerateJwtToken(user, "User");
+            _logger.LogInformation("проверка логера");
             return Ok(new { token });
         }
        
