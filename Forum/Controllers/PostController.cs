@@ -154,7 +154,7 @@ namespace Forum.Controllers
        
 
         [HttpPut("UpdatePost")]
-        public async Task<IActionResult> UpdatePost(Post newPost)//доделать redis
+        public async Task<IActionResult> UpdatePost(Post newPost)
         {
             var post = _context.Posts.FirstOrDefault(i => i.PostId == newPost.PostId);
             if(post != null) 
