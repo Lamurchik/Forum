@@ -31,7 +31,7 @@ namespace Forum.Controllers
 
             if (cachedComment != null)
             {
-                var resRedis = JsonSerializer.Deserialize<Post>(cachedComment);
+                var resRedis = JsonSerializer.Deserialize<List<Comment>>(cachedComment);
                 Console.WriteLine("redis get comments");
                 return Ok(resRedis);
 

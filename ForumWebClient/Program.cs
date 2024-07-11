@@ -1,7 +1,18 @@
+using ForumWebClient.Models.DI;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddHttpClient();
+
+builder.Services.AddTransient<ApiService>(sp =>
+{
+    var httpClient= sp.GetRequiredService<HttpClient>();
+    var hostName = "localhost:7173";
+    return new ApiService(httpClient, hostName);
+});
 
 var app = builder.Build();
 
@@ -19,6 +30,8 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+//app.AddHttpClient();
 
 app.MapControllerRoute(
     name: "default",

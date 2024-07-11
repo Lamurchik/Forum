@@ -5,13 +5,16 @@
 }
 
 <div class="post-list">
-    @foreach (var post in Model)
+    @if(Model !=null)
     {
-        <div class="post-summary">
-            <h2 class="post-title"><a href="/Post/@post.PostId">@post.PostTitle</a></h2>
-            <h3 class="post-subtitle">@post.PostSubtitle</h3>
-            <p class="post-content">@post.PostBody.Substring(0, 100)...</p>
-            
-        </div>
-    }
+        @foreach (var post in Model)
+        {
+            <div class="post-summary">
+                <h2 class="post-title"><a href="/Post/@post.PostId">@post.PostTitle</a></h2>
+                <h3 class="post-subtitle">@post.PostSubtitle</h3>
+                <p class="post-content">@post.PostBody</p>
+
+            </div>
+        }
+    } 
 </div>
