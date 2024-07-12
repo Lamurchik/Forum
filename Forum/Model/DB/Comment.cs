@@ -29,17 +29,6 @@ namespace Forum.Model.DB
         [Required]
         public TimeSpan CommentTime { get; set; } // Время комментария
 
-        [JsonIgnore]
-        [ForeignKey("ParentCommentId")]
-        public Comment ParentComment { get; set; } // Связь с родительским комментарием (если это ответ)
-
-        [JsonIgnore]
-        public Post Post { get; set; } // Связь с постом
-
-        [JsonIgnore]
-        public User User { get; set; } // Связь с пользователем
-
-        public ICollection<Comment> Replies { get; set; } = new List<Comment>(); // Коллекция ответов на комментарий
     }
 }
 

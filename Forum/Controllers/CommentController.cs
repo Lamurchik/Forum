@@ -58,12 +58,18 @@ namespace Forum.Controllers
 
 
         [HttpGet("GetComment")]
-        public async Task<IActionResult> GetComment(int comentId)
+        public async Task<IActionResult> GetComment(int commentId)
         {
-            var com = await _context.Comments.FirstOrDefaultAsync(c=> c.Id == comentId);
+            var com = await _context.Comments.FirstOrDefaultAsync(c=> c.Id == commentId);
             if (com == null) return NotFound();
             return Ok(com);
         }
+
+
+
+
+
+
         [HttpPost("SendComment")]
         public async Task<IActionResult> SendComment(Comment comment)
         {
@@ -76,7 +82,7 @@ namespace Forum.Controllers
         }
 
         [HttpDelete("DelateComment")]
-        public async Task<IActionResult> DelateComment(int commentId)
+        public async Task<IActionResult> DelateComment(int commentId)//не удалил из кеша 
         {
             var DelCom =await _context.Comments.FindAsync(commentId);
             if(DelCom!=null)
@@ -101,6 +107,7 @@ namespace Forum.Controllers
             return NotFound();
 
         }
+
 
     }
 }

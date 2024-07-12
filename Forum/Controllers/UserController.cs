@@ -52,7 +52,7 @@ namespace Forum.Controllers
 
             var token = GenerateJwtToken(user, "User");
             _logger.LogInformation("проверка логера");
-            return Ok(new { token });
+            return Ok(new { token, user.UserId });
         }
        
         private string GenerateJwtToken(User user, string role)

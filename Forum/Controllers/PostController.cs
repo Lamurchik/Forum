@@ -55,7 +55,7 @@ namespace Forum.Controllers
                 return NotFound();
         }
 
-       // [Authorize(Roles = "User")]
+       [Authorize(Roles = "User")]
         [HttpPost("CreatePost")]
         public async Task<IActionResult> CreatePost([FromForm] Post post,  IFormFile? titleImageFile)//свагер работает не коректно 
         {
@@ -151,8 +151,8 @@ namespace Forum.Controllers
             }
                 return NotFound();
         }
-       
 
+        [Authorize(Roles = "User")]
         [HttpPut("UpdatePost")]
         public async Task<IActionResult> UpdatePost(Post newPost)
         {
