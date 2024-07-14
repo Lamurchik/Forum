@@ -40,7 +40,7 @@ namespace Forum.Controllers
 
 
             List<Comment>? comments = null;
-            await Task.Run(() => { comments = _context.Posts.FirstOrDefault(i => i.PostId == postId)?.Comments.ToList(); });
+            comments  =await _context.Comments.Where(c=> c.PostId == postId).ToListAsync();
             if (comments != null)
             {
                 var serializedPosts = JsonSerializer.Serialize(comments);

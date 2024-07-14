@@ -10,7 +10,7 @@
         @foreach (var post in Model)
         {
             <div class="post-summary">
-                <h2 class="post-title"><a href="/Post/@post.PostId">@post.PostTitle</a></h2>
+                <h2 class="post-title"><a asp-controller="Main" asp-action="PostPage" asp-route-id="@post.PostId">@post.PostTitle</a></h2>
                 <h3 class="post-subtitle">@post.PostSubtitle</h3>
                 <p class="post-content">@post.PostBody</p>
 

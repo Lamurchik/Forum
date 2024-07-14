@@ -1,4 +1,6 @@
-﻿using System.Net.Http.Headers;
+﻿
+
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
@@ -30,6 +32,7 @@ namespace ForumWebClient.Models.DI
         }
         public async Task<Post> GetPostAsync(int postId)
         {
+
             var response = await _httpClient.GetAsync($"https://{_hostName}/api/Post/GetPost?id={postId}");
             response.EnsureSuccessStatusCode();
             var post = await response.Content.ReadFromJsonAsync<Post>();
@@ -37,14 +40,27 @@ namespace ForumWebClient.Models.DI
         }
 
         public async Task<IFormFile> GetPostImageAsync(int postId) //тест
-        {
+        { 
             var response = await _httpClient.GetAsync($"https://{_hostName}/api/Post/GetPostImage?postId={postId}");
             response.EnsureSuccessStatusCode();
 
             var img = await response.Content.ReadFromJsonAsync<IFormFile>();
-
+       
             return img;
         }
+
+        public async Task<string> GetPostImage64Async(int postId) //тест
+        {
+            var response = await _httpClient.GetAsync($"https://{_hostName}/api/Post/GetPostImage?postId={postId}");
+            response.EnsureSuccessStatusCode();
+
+            var imageBytes = await response.Content.ReadAsByteArrayAsync();
+            var base64Image = Convert.ToBase64String(imageBytes);
+            return base64Image;
+        }
+
+
+
 
 
         public async Task<HttpResponseMessage> CreatePostAsync(Post post, IFormFile titleImageFile, string jwtToken)
@@ -104,20 +120,37 @@ namespace ForumWebClient.Models.DI
 
 
         #region login
-        public async Task<LogimInfo> Login(string username, string password)
+        public async Task<LogimInfo> LoginAsync(string userName, string password)
         {
-            var url = $"https://{_hostName}/api/User/Login?loginName={username}&password={password}";
+            var url = $"https://{_hostName}/api/User/Login?loginName={userName}&password={password}";
 
-            var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
+            var parameters = new
+            {
+                userName,
+                password
+            };
 
-            var json = await response.Content.ReadAsStringAsync();
-            var loginfo = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
+            ///хуйня для даунов 
+            ///
 
-            return new LogimInfo { JwtToken = loginfo.token, UserId = loginfo.userId };
+           
+
+
+            var response = await _httpClient.PostAsJsonAsync(url, parameters);
+                response.EnsureSuccessStatusCode();
+
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var loginInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+
+                return new LogimInfo
+                {
+                    JwtToken = loginInfo.token,
+                    UserId = loginInfo.userId
+                };
+            
         }
 
-        public async Task Register(string username, string password)
+        public async Task RegisterAsync(string username, string password)
         {
             var url = $"https://{_hostName}/api/User/Register?loginName={username}&{password}";
             var response = await _httpClient.GetAsync(url);

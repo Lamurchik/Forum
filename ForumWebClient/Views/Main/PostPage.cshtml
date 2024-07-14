@@ -1,0 +1,44 @@
+﻿@model PostPage
+@{
+    ViewData["Title"] = "Post Details";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h2>@Model.Post.PostTitle</h2>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Base64Image))
+    {
+        <div class="card-image-box">
+            <img src="data:image/jpeg;base64,@Model.Base64Image" alt="Post Image" class="card-image" />
+        </div>
+    }
+
+    <div class="card-body">
+        <h3>@Model.Post.PostSubtitle</h3>
+        <p>@Model.Post.PostBody</p>
+    </div>
+
+    <div class="card-comments">
+        <h4>Comments</h4>
+        <div class="comments-section">
+            @foreach (var comment in Model.Comments)
+            {
+                <div class="card-comment">
+                    <p>@comment.Text</p>
+                    <p class="comment-info">Posted by @comment.UserId</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <form method="post" asp-controller="Main" asp-action="SendComent" class="comment-form">
+        <input type="hidden" name="PostId" value="@Model.Post.PostId" />
+        <div class="form-group">
+            <label for="commentText">Comment</label>
+            <textarea id="commentText" name="Text" class="form-control" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>

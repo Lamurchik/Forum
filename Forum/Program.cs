@@ -10,12 +10,25 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using NLog;
 using NLog.Web;
 using NLog.Extensions.Logging;
+using OpenSearch.Net;
+using Serilog.Events;
+using Serilog.Sinks.OpenSearch;
+using Serilog;
+using System.Net;
+
+using AutoRegisterTemplateVersion = Serilog.Sinks.OpenSearch.AutoRegisterTemplateVersion;
+using CertificateValidations = OpenSearch.Net.CertificateValidations;
+using System.Reflection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 
-var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
+
+var logger1 = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 
 
-logger.Debug("init main");
+logger1.Debug("init main");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -90,7 +103,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireUserRole", policy => policy.RequireRole("User"));
 });
 
-//builder.Services.AddStackExchangeRedisCache();
+
 
 
 
@@ -100,13 +113,48 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "local"; // Префикс для ключей Redis
 });
 
+//serialog
+
+builder.Services.AddLogging(loggingBuilder =>
+{
+    loggingBuilder.AddConsole();
+    loggingBuilder.AddDebug();
+});
+
+builder.Logging.ClearProviders();
+Serilog.Debugging.SelfLog.Enable(msg => Console.WriteLine(msg));
+ServicePointManager.ServerCertificateValidationCallback = (o, certificate, chain, errors) => true;
+ServicePointManager.ServerCertificateValidationCallback = CertificateValidations.AllowAll;
+
+var logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.OpenSearch(new OpenSearchSinkOptions(new Uri("https://localhost:9200"))
+    {
+        AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.OSv1,
+        MinimumLogEventLevel = LogEventLevel.Verbose,
+        TypeName = "_doc",
+        InlineFields = false,
+        ModifyConnectionSettings = x =>
+            x.BasicAuthentication("admin", "bars123@superMyPassword")
+                .ServerCertificateValidationCallback(CertificateValidations.AllowAll)
+                .ServerCertificateValidationCallback((o, certificate, chain, errors) => true),
+        IndexFormat = "my-index-{0:yyyy.MM.dd}",
+    })
+    .CreateLogger();
+    
+builder.Logging.ClearProviders();
+builder.Logging.AddSerilog(logger);
+
+
+
+
 
 
 var app = builder.Build();
 
 
-var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-loggerFactory.AddNLog();
+//var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+//loggerFactory.AddNLog();
 
 
 using (var scope = app.Services.CreateScope())
@@ -133,3 +181,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+app.Logger.LogInformation("starting up");
