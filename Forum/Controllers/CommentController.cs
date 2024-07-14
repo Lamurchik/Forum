@@ -1,10 +1,12 @@
 ﻿using Forum.Model.DB;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Hosting;
 using System.ComponentModel.Design;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace Forum.Controllers
@@ -16,10 +18,12 @@ namespace Forum.Controllers
         private readonly ForumDBContext _context;
         private readonly IDistributedCache _cache;
         private readonly string _redisKeyComment = "Comment:";
-        public CommentController(ForumDBContext context, IDistributedCache cache) 
+        private readonly ILogger<CommentController> _logger;
+        public CommentController(ForumDBContext context, IDistributedCache cache, ILogger<CommentController> logger)
         {
             _context = context;
             _cache = cache;
+            _logger = logger;
         }
 
 
@@ -62,6 +66,12 @@ namespace Forum.Controllers
         {
             var com = await _context.Comments.FirstOrDefaultAsync(c=> c.Id == commentId);
             if (com == null) return NotFound();
+
+            await _cache.SetStringAsync($"{_redisKeyComment}{commentId}", JsonSerializer.Serialize(com), new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2) // Настройте время хранения в кэше
+            });
+
             return Ok(com);
         }
 
@@ -69,7 +79,7 @@ namespace Forum.Controllers
 
 
 
-
+        [Authorize(Roles = "User")]
         [HttpPost("SendComment")]
         public async Task<IActionResult> SendComment(Comment comment)
         {
@@ -81,26 +91,51 @@ namespace Forum.Controllers
             return Ok();
         }
 
+        [Authorize(Roles = "User")]
         [HttpDelete("DelateComment")]
         public async Task<IActionResult> DelateComment(int commentId)//не удалил из кеша 
         {
-            var DelCom =await _context.Comments.FindAsync(commentId);
-            if(DelCom!=null)
+            var delCom =await _context.Comments.FindAsync(commentId);
+            if(delCom!=null)
             {
-                 _context.Remove(DelCom);
+
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (delCom.UserId != Convert.ToUInt32(userId))
+                {
+                    _logger.LogWarning("attempt to influence a comment by an unauthorized person");
+                    return Forbid("You are not authorized to update this post. It not you post");
+                }
+
+                _context.Remove(delCom);
                 await _context.SaveChangesAsync();
+                await _cache.RemoveAsync($"{_redisKeyComment}{commentId}");
                 return Ok();
             }
             return NotFound();
         }
+        [Authorize(Roles = "User")]
         [HttpPut("UpdateComent")]
         public async Task<IActionResult> UpdateComment(int commentId, string updateText)
         {
             var updateCom = await _context.Comments.FindAsync(commentId);
             if(updateCom!=null)
             {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (updateCom.UserId != Convert.ToUInt32(userId))
+                {
+                    _logger.LogWarning("attempt to influence a comment by an unauthorized person");
+                    return Forbid("You are not authorized to update this post. It not you post");
+                }
+
                 updateCom.Text= updateText;
                 await _context.SaveChangesAsync();
+                var updateSerilzed = JsonSerializer.Serialize(updateCom);
+                await _cache.SetStringAsync($"{_redisKeyComment}{commentId}",updateSerilzed , new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2) // Настройте время хранения в кэше
+                });
                 return Ok();
             }
 

@@ -9,6 +9,7 @@ using System.Reflection.Metadata.Ecma335;
 using StackExchange.Redis;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
+using System.Security.Claims;
 
 namespace Forum.Controllers
 {
@@ -21,11 +22,13 @@ namespace Forum.Controllers
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IDistributedCache _cache;
         private readonly string _redisKeyPost = "Post:";
-        public PostController(ForumDBContext context, IWebHostEnvironment hostingEnvironment, IDistributedCache cache)   
+        private readonly ILogger<PostController> _logger;
+        public PostController(ForumDBContext context, IWebHostEnvironment hostingEnvironment, IDistributedCache cache, ILogger<PostController> logger)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
             _cache = cache;
+            _logger = logger;
         }
         [HttpGet("GetPost")]
         public async Task<IActionResult> GetPost(int id)
@@ -159,6 +162,14 @@ namespace Forum.Controllers
             var post = _context.Posts.FirstOrDefault(i => i.PostId == newPost.PostId);
             if(post != null) 
             {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (post.UserAuthorId != Convert.ToUInt32(userId))
+                {
+                    _logger.LogWarning("attempt to influence a post by an unauthorized person");
+                    return Forbid("You are not authorized to update this post. It not you post");
+                }
+
                 post.PostSubtitle = newPost.PostSubtitle;
                 post.PostTitle = newPost.PostTitle;
                 post.PostBody = newPost.PostBody;
@@ -170,12 +181,23 @@ namespace Forum.Controllers
             }
             return NotFound();          
         }
+
+        [Authorize(Roles = "User")]
         [HttpDelete("DelatePost")]
         public async Task<IActionResult> DelatePost(int postId)
         {
-             var post = await _context.Posts.FindAsync(postId);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var post = await _context.Posts.FindAsync(postId);
             if(post != null)
             {
+                if(post.UserAuthorId!=Convert.ToUInt32( userId) )
+                {
+                    _logger.LogWarning("attempt to influence a post by an unauthorized person");
+                    return Forbid("You are not authorized to delete this post. It not you post");
+                }
+
+
                 _context.Remove(post);
                 await _context.SaveChangesAsync();
                 await _cache.RemoveAsync($"{_redisKeyPost}{postId}");

@@ -27,19 +27,40 @@ namespace Forum.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register(string loginName, string password)
         {
-            if (_context.Users.Any(u => u.Username == loginName && u.Password == password))
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                return BadRequest("User already exists.");
-            }
-            var user = new User
-            {
-                Username = loginName,
-                Password = password
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+                // Проверяем, существует ли пользователь с таким логином и паролем
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginName && u.Password == password);
+                if (existingUser != null)
+                {
+                    return BadRequest("User already exists.");
+                }
 
-            return Ok("User registered successfully.");
+                // Создаем нового пользователя
+                var user = new User
+                {
+                    Username = loginName,
+                    Password = password
+                };
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                // Завершаем транзакцию
+                await transaction.CommitAsync();
+
+                // Логируем успешную регистрацию пользователя
+                _logger.LogInformation($"New user registered: {loginName}");
+
+                return Ok("User registered successfully.");
+            }
+            catch (Exception ex)
+            {
+                // Откатываем транзакцию в случае ошибки
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error occurred while registering user: {Username}", loginName);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         [HttpPost("Login")]
@@ -48,10 +69,14 @@ namespace Forum.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u=> u.Username==loginName&&u.Password==password);
 
 
-            if (user == null) { return Unauthorized("Invalid username or password."); }
+            if (user == null) 
+            {
+                _logger.LogInformation("unsuccessful login attempt");
+                return Unauthorized("Invalid username or password."); 
+            }
 
             var token = GenerateJwtToken(user, "User");
-            _logger.LogInformation("проверка логера");
+            _logger.LogInformation("User logged in system");
             return Ok(new { token, user.UserId });
         }
        
@@ -59,11 +84,13 @@ namespace Forum.Controllers
         {
             var claims = new[]
             {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
+           // new Claim(JwtRegisteredClaimNames.Sub, user.Username),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Role, role)
+            new Claim(ClaimTypes.Role, role),
+            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
+
             };
-            var q = _configuration["Jwt:Key"];
+            //var q = _configuration["Jwt:Key"];
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
