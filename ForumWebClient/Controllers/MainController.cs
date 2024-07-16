@@ -1,6 +1,7 @@
 using ForumWebClient.Models;
 using ForumWebClient.Models.DI;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -23,10 +24,13 @@ namespace ForumWebClient.Controllers
         }
 
         //[Route("Index")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index()//домашн€€ страница
         {
-            int userId = 1; // ”кажите реальный идентификатор пользовател€
-            var posts = await _apiService.GetUserPostsAsync(userId);
+            int? userId = HttpContext.Session.GetInt32("userId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            var posts = await _apiService.GetUserPostsAsync(userId ?? 1);
 
             return View(posts);
         }
@@ -91,16 +95,52 @@ namespace ForumWebClient.Controllers
         }
 
         [HttpPost("SendComent")]
-        public async Task<IActionResult> SendComent(int postId, string commentText, string returnUrl)
+        public async Task<IActionResult> SendComent(int postId, string text, string returnUrl)//хуйн€ ебана€ не работает 
         {
             if (HttpContext.Session.GetString("jwtToken") == null || HttpContext.Session.GetString("jwtToken") == "")
                 return RedirectToAction("Login");
 
-            var comment = new Comment() { ParentCommentId = null, PostId = postId, Text = commentText, UserId = HttpContext.Session.GetInt32("userId")?? 0 };
+            var comment = new Comment() { ParentCommentId = null, PostId = postId, Text = text, UserId = HttpContext.Session.GetInt32("userId")?? 0 };
 
             var res = await _apiService.SendCommentAsync(comment, HttpContext.Session.GetString("jwtToken"));
 
-            return View(); 
+            return RedirectToAction("PostPage", new { id = postId}); 
+        }
+
+        [HttpGet("CreatePost")]
+        public async Task<IActionResult> CreatePost()
+        {
+            return View();
+        }
+
+        [HttpPost("CreatePost")]
+        public async Task<IActionResult> CreatePost([FromForm] Post post, IFormFile postImage)
+        {
+            if (ModelState.IsValid)
+            {
+                if (postImage != null && postImage.Length > 0)
+                {
+                    int? userId = HttpContext.Session.GetInt32("userId") ;
+                    if(userId!=null  )
+                    {
+                        post.UserAuthorId = userId ?? 0;
+
+                        if (HttpContext.Session.GetString("jwtToken") != null)
+                        await _apiService.CreatePostAsync(post, postImage, HttpContext.Session.GetString("jwtToken") ?? "");
+                    }
+                    else
+                    {
+                        return RedirectToAction("Login");
+                    }
+
+                }
+                
+
+               
+
+                return RedirectToAction("Index"); // или любой другой метод, который вы хотите вызвать после создани€ поста
+            }
+            return View(post);
         }
 
 

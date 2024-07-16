@@ -3,6 +3,8 @@
     ViewData["Title"] = "Post Details";
 }
 
+<div class="container-fluid">
+
 <div class="card">
     <div class="card-header">
         <h2>@Model.Post.PostTitle</h2>
@@ -37,8 +39,9 @@
         <input type="hidden" name="PostId" value="@Model.Post.PostId" />
         <div class="form-group">
             <label for="commentText">Comment</label>
-            <textarea id="commentText" name="Text" class="form-control" required></textarea>
+            <textarea id="commentText" name="text" class="form-control" required></textarea>
         </div>
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+</div>
 </div>

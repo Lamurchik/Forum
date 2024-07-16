@@ -40,12 +40,12 @@ namespace ForumWebClient.Models.DI
         }
 
         public async Task<IFormFile> GetPostImageAsync(int postId) //тест
-        { 
+        {
             var response = await _httpClient.GetAsync($"https://{_hostName}/api/Post/GetPostImage?postId={postId}");
             response.EnsureSuccessStatusCode();
 
             var img = await response.Content.ReadFromJsonAsync<IFormFile>();
-       
+
             return img;
         }
 
@@ -63,7 +63,7 @@ namespace ForumWebClient.Models.DI
 
 
 
-        public async Task<HttpResponseMessage> CreatePostAsync(Post post, IFormFile titleImageFile, string jwtToken)
+        public async Task<HttpResponseMessage> CreatePostAsync(Post post, IFormFile? titleImageFile, string jwtToken)
         {
             var uriBuilder = new UriBuilder($"https://{_hostName}/api/Post/CreatePost");
 
@@ -133,21 +133,21 @@ namespace ForumWebClient.Models.DI
             ///хуйня для даунов 
             ///
 
-           
+
 
 
             var response = await _httpClient.PostAsJsonAsync(url, parameters);
-                response.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
 
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var loginInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            var loginInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(jsonResponse);
 
-                return new LogimInfo
-                {
-                    JwtToken = loginInfo.token,
-                    UserId = loginInfo.userId
-                };
-            
+            return new LogimInfo
+            {
+                JwtToken = loginInfo.token,
+                UserId = loginInfo.userId
+            };
+
         }
 
         public async Task RegisterAsync(string username, string password)
@@ -192,14 +192,51 @@ namespace ForumWebClient.Models.DI
         {
             var uriBuilder = new UriBuilder($"https://{_hostName}/api/Comment/SendComment");
 
+            var commentPayload = new
+            {
+                id = comment.Id, // Assuming the Comment model has an Id property
+                text = comment.Text,
+                parentCommentId = comment.ParentCommentId,
+                userId = comment.UserId,
+                postId = comment.PostId
+            };
+
+            // Сериализация объекта в JSON
+            var jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(commentPayload);
+
+            // Создание JSON-контента
+            var jsonContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
             var request = new HttpRequestMessage(HttpMethod.Post, uriBuilder.ToString())
             {
-                Content = JsonContent.Create(comment)
+                Content = jsonContent
             };
+
+            // Добавление заголовка авторизации
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
 
-            return await _httpClient.SendAsync(request);
+            // Логирование для отладки
+            Console.WriteLine("Request URI: " + uriBuilder.ToString());
+            Console.WriteLine("Request Payload: " + jsonPayload);
+            Console.WriteLine("Request Headers: " + request.Headers.ToString());
+
+            // Отправка запроса
+            var response = await _httpClient.SendAsync(request);
+
+            // Логирование для отладки
+            Console.WriteLine("Response Status Code: " + response.StatusCode);
+            if (!response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("Response Content: " + responseContent);
+            }
+
+            return response;
+
         }
+
+
+        
 
         public async Task<HttpResponseMessage> UpdateCommentAsync(int commentId, string updateText, string jwtToken)
         {

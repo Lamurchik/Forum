@@ -28,18 +28,22 @@ namespace Forum.Controllers
 
 
         [HttpGet("GetPostComents")]
-        public async Task<IActionResult> GetPostComents(int postId)//тут редис нужен 
+        public async Task<IActionResult> GetPostComents(int postId,bool updateCashe= false)//тут редис нужен 
         {
 
-            var cachedComment = await _cache.GetStringAsync($"{_redisKeyComment}All{postId}");
-
-            if (cachedComment != null)
+            if(!updateCashe) 
             {
-                var resRedis = JsonSerializer.Deserialize<List<Comment>>(cachedComment);
-                Console.WriteLine("redis get comments");
-                return Ok(resRedis);
+                var cachedComment = await _cache.GetStringAsync($"{_redisKeyComment}All{postId}");
 
+                if (cachedComment != null)
+                {
+                    var resRedis = JsonSerializer.Deserialize<List<Comment>>(cachedComment);
+                    Console.WriteLine("redis get comments");
+                    return Ok(resRedis);
+
+                }
             }
+            
 
 
 
@@ -88,6 +92,8 @@ namespace Forum.Controllers
 
             await _context.Comments.AddAsync(comment);
             await _context.SaveChangesAsync();
+
+            await GetPostComents(comment.PostId, true);
             return Ok();
         }
 

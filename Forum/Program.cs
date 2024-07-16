@@ -22,6 +22,8 @@ using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using Forum.Model.GrachQL;
 
 
 
@@ -148,6 +150,17 @@ builder.Logging.AddSerilog(logger);
 
 
 
+//  HotChocolate
+builder.Services
+    .AddGraphQLServer()
+    .AddQueryType<Forum.Model.GrachQL.Query>()
+    .AddMutationType<Mutation>()
+    .AddSubscriptionType<Subscription>()
+    .AddInMemorySubscriptions();
+
+
+
+
 
 
 var app = builder.Build();
@@ -179,6 +192,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+
+app.UseWebSockets();
+app.MapGraphQL("/graphql");
 
 app.Run();
 app.Logger.LogInformation("starting up");

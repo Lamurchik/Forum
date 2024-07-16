@@ -1,0 +1,43 @@
+﻿@model Post
+
+@{
+    ViewData["Title"] = "Create Post";
+}
+
+<div class="container mt-4">
+    <h1>Create Post</h1>
+
+    <form asp-action="CreatePost" method="post" enctype="multipart/form-data" class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label asp-for="PostTitle" class="control-label">Post Title</label>
+                <input asp-for="PostTitle" class="form-control" />
+                <span asp-validation-for="PostTitle" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="PostSubtitle" class="control-label">Post Subtitle</label>
+                <input asp-for="PostSubtitle" class="form-control" />
+                <span asp-validation-for="PostSubtitle" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="PostBody" class="control-label">Post Body</label>
+                <textarea asp-for="PostBody" rows="6" class="form-control"></textarea>
+                <span asp-validation-for="PostBody" class="text-danger"></span>
+            </div>
+
+            
+
+            <div class="form-group">
+                <label for="PostImage" class="control-label">Post Image</label>
+                <input type="file" class="form-control-file" id="PostImage" name="postImage">
+            </div>
+        </div>
+        <div class="card-footer text-right">
+            <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+    </form>
+</div>
+
+

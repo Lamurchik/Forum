@@ -60,13 +60,13 @@ namespace Forum.Controllers
 
        [Authorize(Roles = "User")]
         [HttpPost("CreatePost")]
-        public async Task<IActionResult> CreatePost([FromForm] Post post,  IFormFile? titleImageFile)//свагер работает не коректно 
+        public async Task<IActionResult> CreatePost([FromForm] Post post,  IFormFile? titleImageFile) 
         {
             
             if (titleImageFile != null)
             {
                 
-                var webRootPath = _hostingEnvironment.WebRootPath;//говно 
+                var webRootPath = _hostingEnvironment.WebRootPath;
                 var imagesPath = System.IO.Path.Combine(webRootPath, "images");
 
                 // Убедитесь, что папка существует
@@ -92,6 +92,9 @@ namespace Forum.Controllers
             post.PostDate = DateTime.Now.ToUniversalTime();            
             await _context.Posts.AddAsync(post);
             _context.SaveChanges();
+
+            await GetUserPosts(post.UserAuthorId, true);
+
             return Ok();
         }
 
@@ -126,18 +129,22 @@ namespace Forum.Controllers
 
 
         [HttpGet("GetUserPosts")]
-        public async Task<IActionResult> GetUserPosts(int userID) //нужен ли тут редис?
+        public async Task<IActionResult> GetUserPosts(int userID, bool update=false) //нужен ли тут редис?
         {
             //редис 
-            var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}All{userID}");
-
-            if ( cachedPost != null ) 
+            if(!update)
             {
-                var resRedis = JsonSerializer.Deserialize<List<Post>>(cachedPost);//list
-                Console.WriteLine("redis get post");
-                return Ok(resRedis);
+                var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}All{userID}");
 
+                if (cachedPost != null && cachedPost != "[]")
+                {
+                    var resRedis = JsonSerializer.Deserialize<List<Post>>(cachedPost);//list
+                    Console.WriteLine("redis get post");
+                    return Ok(resRedis);
+
+                }
             }
+            
 
             //бд
             List<Post>? res = null;
@@ -147,7 +154,7 @@ namespace Forum.Controllers
                 var serializedPosts = JsonSerializer.Serialize(res);
                 await _cache.SetStringAsync($"{_redisKeyPost}All{userID}", serializedPosts, new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) // Настройте время хранения в кэше
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) // Настройте время хранения в кэше
                 });
                 return Ok(res);
 
