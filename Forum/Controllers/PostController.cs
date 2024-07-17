@@ -10,6 +10,7 @@ using StackExchange.Redis;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace Forum.Controllers
 {
@@ -212,5 +213,44 @@ namespace Forum.Controllers
             }
             return NotFound();
         }
+
+        [HttpGet("GetPostsDay")]
+        public async Task<IActionResult> GetPostsDay(DateTime date)
+        {
+
+
+            var cachedPost = await _cache.GetStringAsync($"{_redisKeyPost}{date.ToString()}");
+
+            if(cachedPost != null) 
+            {
+                var resRedis = JsonSerializer.Deserialize<List<Post>>(cachedPost);
+                return Ok(resRedis);
+            }
+
+
+
+
+            var startOfDay = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
+            var endOfDay = DateTime.SpecifyKind(date.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+
+           
+            var posts = await _context.Posts
+                .Where(p => p.PostDate >= startOfDay && p.PostDate <= endOfDay)
+                .ToListAsync();
+
+            if (posts == null || !posts.Any())
+            {
+                return NotFound("No posts found for the specified date.");
+            }
+
+            var serializedPosts = JsonSerializer.Serialize(posts);
+            _cache.SetString($"{_redisKeyPost}{date.ToString()}", serializedPosts, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1) // Настройте время хранения в кэше
+            });
+
+            return Ok(posts);
+        }
+
     }  
 }

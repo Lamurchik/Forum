@@ -27,10 +27,7 @@ namespace Forum.Model.DB
         public string? PostFilePatch { get; set; } // Путь к файлу поста (если есть)
 
         [JsonIgnore]
-        public User? User { get; set; } // Связь с таблицей пользователей (автор поста)
-
-        [JsonIgnore]
-        public ICollection<Comment> Comments { get; set; } = new List<Comment>(); // Коллекция комментариев к посту
+        public User? User { get; set; }
     }
 }
 

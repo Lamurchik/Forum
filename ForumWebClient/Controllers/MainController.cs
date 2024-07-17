@@ -63,6 +63,33 @@ namespace ForumWebClient.Controllers
             return await Login();
         }
 
+
+
+        [HttpGet("Register")]
+        public async Task<IActionResult> Register()
+        {
+            return View();
+        }
+
+
+
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register(string userName, string password)
+        {
+            try
+            {
+                await _apiService.RegisterAsync(userName, password);
+
+                return RedirectToAction("Login");
+            }
+            catch (Exception ex)
+            {
+                return RedirectToAction("Erorr");
+            }
+            return await Login();
+        }
+
+
         [Route("PostPage")]
         public async Task<IActionResult> PostPage(int id)
         {
@@ -79,14 +106,7 @@ namespace ForumWebClient.Controllers
             catch { }
 
 
-            //if (img != null)
-            //{
-            //    using (var memoryStream = new MemoryStream())
-            //    {
-            //        await img.CopyToAsync(memoryStream);
-            //         base64Image = Convert.ToBase64String(memoryStream.ToArray());
-            //    }
-            //}
+   
 
 
 
@@ -110,6 +130,8 @@ namespace ForumWebClient.Controllers
         [HttpGet("CreatePost")]
         public async Task<IActionResult> CreatePost()
         {
+            if(HttpContext.Session.GetString("jwtToken") == null)
+                return RedirectToAction("Login");
             return View();
         }
 
@@ -142,6 +164,16 @@ namespace ForumWebClient.Controllers
             }
             return View(post);
         }
+
+        [Route("PostDay")]
+        public async Task<IActionResult> PostDay()
+        {
+            var posts =await  _apiService.GetPostsDayAsync(DateTime.UtcNow.ToString("yyyy-MM-dd"));
+            return View(posts);
+
+        }
+
+
 
 
         [Route("Erorr")]

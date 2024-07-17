@@ -1,5 +1,6 @@
 ﻿
 
+
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -25,6 +26,24 @@ namespace ForumWebClient.Models.DI
         {
             var response = await _httpClient.GetAsync($"https://{_hostName}/api/Post/GetUserPosts?userID={userId}");
             response.EnsureSuccessStatusCode();
+
+            var posts = await response.Content.ReadFromJsonAsync<List<Post>>();
+
+            return posts;
+        }
+
+        public async Task<List<Post>> GetPostsDayAsync(string date)
+        {
+            var response = await _httpClient.GetAsync($"https://{_hostName}/api/Post/GetPostsDay?date={date}");
+            try
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            catch 
+            {
+                return new List<Post>();
+            }
+            
 
             var posts = await response.Content.ReadFromJsonAsync<List<Post>>();
 
@@ -152,8 +171,20 @@ namespace ForumWebClient.Models.DI
 
         public async Task RegisterAsync(string username, string password)
         {
-            var url = $"https://{_hostName}/api/User/Register?loginName={username}&{password}";
-            var response = await _httpClient.GetAsync(url);
+            var url = $"https://{_hostName}/api/User/Register?loginName={username}&password={password}";
+
+            var content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(new
+            {
+                loginName = username,
+                password = password
+            }), Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = content
+            };
+
+            var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
         }
         #endregion
@@ -253,6 +284,9 @@ namespace ForumWebClient.Models.DI
             return await _httpClient.SendAsync(request);
         }
 
+
+
+       
 
 
         #endregion
