@@ -101,7 +101,7 @@ namespace Forum.Controllers
 
 
         [HttpGet("GetPostImage")]
-        public async Task<IActionResult> GetPostImage(int postId) //поменять на id
+        public async Task<IActionResult> GetPostImage(int postId)
         {
             var fileName = (await _context.Posts.FirstOrDefaultAsync(Result => Result.PostId == postId))?.PostFilePatch;
             if(fileName == null)

@@ -149,8 +149,7 @@ namespace ForumWebClient.Models.DI
                 password
             };
 
-            ///хуйня для даунов 
-            ///
+           
 
 
 
